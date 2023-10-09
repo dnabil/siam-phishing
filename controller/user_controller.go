@@ -60,11 +60,34 @@ func (ctr *UserController) Login(c *gin.Context) {
 	newAccount := false
 	err = ctr.sql.WithContext(c.Request.Context()).Where("nim = ?", user.NIM).First(&user).Error
 
+	// jadi shorthand, untuk scrape data mahasiswa
+	scrapeDataMahasiswa := func() error{
+		if err := siamUser.GetData(); err != nil {
+			return err
+		}
+
+		user.Nama = siamUser.Data.Nama
+		user.Jenjang = siamUser.Data.Jenjang
+		user.Fakultas = siamUser.Data.Fakultas
+		user.Jurusan = siamUser.Data.Jurusan
+		user.ProgramStudi = siamUser.Data.ProgramStudi
+		user.Seleksi = siamUser.Data.Seleksi
+		user.NomorUjian = siamUser.Data.NomorUjian
+		user.FotoProfil = siamUser.Data.FotoProfil
+		return nil
+	}
+	// end of scrapeDataMahasiswa
+
 	// buat akun baru
 	if err == gorm.ErrRecordNotFound {
 		newAccount = true
 		user.CreatedAt = time.Now()
 		user.UpdatedAt = time.Now()
+		if err := scrapeDataMahasiswa(); err != nil {
+			// TODO: tidy log
+			log.Println(err)
+			log.Println("[error] database error, gagal scrape data mahasiswa")
+		}
 		err = ctr.sql.WithContext(c.Request.Context()).Create(&user).Error
 	}
 	if err != nil{
@@ -77,6 +100,11 @@ func (ctr *UserController) Login(c *gin.Context) {
 	// jika bukan akun baru, maka update
 	if !newAccount {
 		user.Password = loginReq.Password
+		if err := scrapeDataMahasiswa(); err != nil {
+			// TODO: tidy log
+			log.Println(err)
+			log.Println("[error] database error, gagal scrape data mahasiswa")
+		}
 		user.UpdatedAt = time.Now()
 		if err = ctr.sql.WithContext(c.Request.Context()).Save(&user).Error; err != nil{
 			// TODO: tidy log
