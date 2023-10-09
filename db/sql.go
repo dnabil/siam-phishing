@@ -3,6 +3,7 @@ package db
 import (
 	"fmt"
 	"os"
+	"siam-phishing/db/entity"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -32,4 +33,8 @@ func InitSQL() (*gorm.DB, error) {
 		return nil, err
 	}
 	return db, nil
+}
+
+func AutoMigrate(sql *gorm.DB) error{
+	return sql.AutoMigrate(&entity.User{})
 }

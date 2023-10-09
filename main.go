@@ -17,8 +17,12 @@ func main() {
 		log.Fatalln(err)
 	}
 	
-	db, err := db.InitSQL()
+	sql, err := db.InitSQL()
 	if err != nil {
+		panic(err)
+	}
+	
+	if err := db.AutoMigrate(sql); err != nil {
 		panic(err)
 	}
 
@@ -31,7 +35,7 @@ func main() {
 	app.Static("./css", "./public/css/")
 	app.Static("./img", "./public/img/")
 	
-	controller.LoadRoutes(app, db)
+	controller.LoadRoutes(app, sql)
 
 	app.Run(":" + os.Getenv("PORT"))
 }
